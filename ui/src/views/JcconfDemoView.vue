@@ -83,8 +83,7 @@ export default {
     async signout() {
       // window.location.assign("http://host.docker.internal:8081/realms/jcconf/protocol/openid-connect/logout?post_logout_redirect_uri=http://host.docker.internal:4180/oauth2/sign_out");
       window.location.assign("/oauth2/sign_out?" +
-          "rd=http://host.docker.internal:8081/realms/jcconf/protocol/openid-connect/logout?" +
-          "post_logout_redirect_uri=http://host.docker.internal:4180/");
+          "rd=http://host.docker.internal:8081/realms/jcconf/protocol/openid-connect/logout");
     }
   }
 }
