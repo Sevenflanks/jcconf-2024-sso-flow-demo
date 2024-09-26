@@ -1,0 +1,44 @@
+dn: dc=example,dc=org
+objectClass: dcObject
+objectClass: organization
+dc: example
+o: example
+
+dn: ou=users,dc=example,dc=org
+objectClass: organizationalUnit
+ou: users
+
+dn: cn=user01,ou=users,dc=example,dc=org
+cn: User1
+cn: user01
+sn: Bar1
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+userPassword:: cGFzc3dvcmQx
+uid: user01
+uidNumber: 1000
+gidNumber: 1000
+homeDirectory: /home/user01
+mail: user01@jcconf-2024.com.tw
+
+dn: cn=user02,ou=users,dc=example,dc=org
+cn: User2
+cn: user02
+sn: Bar2
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+userPassword:: cGFzc3dvcmQy
+uid: user02
+uidNumber: 1001
+gidNumber: 1001
+homeDirectory: /home/user02
+mail: user02@jcconf-2024.com.tw
+
+dn: cn=twjug,ou=users,dc=example,dc=org
+cn: twjug
+objectClass: groupOfNames
+member: cn=user01,ou=users,dc=example,dc=org
+member: cn=user02,ou=users,dc=example,dc=org
+

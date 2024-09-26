@@ -1,0 +1,38 @@
+services:
+  ldap-ui:
+    image: dnknth/ldap-ui
+    ports:
+      - 5001:5000
+    environment:
+      LDAP_URL: "ldap://openldap:1389"
+      INSECURE_TLS: ${INSECURE_TLS:-}
+      BASE_DN: "dc=example,dc=org"
+      BIND_DN: "cn=admin,dc=example,dc=org"
+      BIND_PASSWORD: "admin"
+    depends_on:
+      - "openldap"
+      
+  # https://hub.docker.com/r/bitnami/openldap
+  openldap:
+    image: bitnami/openldap:2
+    environment:
+      - LDAP_ADMIN_USERNAME=admin
+      - LDAP_ADMIN_PASSWORD=admin
+    volumes:
+      - ./ldap:/ldifs
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    ports:
+      - "8081:8080"
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+      - TZ=Asia/Taipei
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import
+    command:
+      - start-dev
+      - --import-realm
+    depends_on:
+      - "openldap"

@@ -1,0 +1,45 @@
+version: '3'
+services:
+  oauth2-proxy:
+    image: bitnami/oauth2-proxy:7.6.0
+    ports:
+      - '4180:4180'
+    command:
+      # proxy本身的基礎設定
+      - --http-address=0.0.0.0:4180
+      - --provider=oidc
+      - --provider-display-name=JCConf SSO
+      - --upstream=http://host.docker.internal:3000/
+      - --pass-authorization-header=true
+      - --ssl-insecure-skip-verify
+      - --ssl-upstream-insecure-skip-verify
+      - --email-domain=*
+      - --real-client-ip-header=X-Forwarded-For
+      - --skip-auth-route=/favicon.* OR /oauth2/.*
+      - --whitelist-domain=host.docker.internal:8081
+      # oidc的串接設定
+      - --client-id=demo
+      - --client-secret=fMw2Vzp0WZl4fMeE4izQ0BNzb0QQKTJE
+      - --scope=openid email profile groups
+      - --oidc-issuer-url=http://host.docker.internal:8081/realms/jcconf
+      - --redirect-url=http://host.docker.internal:4180/oauth2/callback
+      - --code-challenge-method=S256
+      # cookie設定
+      - --cookie-httponly
+      - --cookie-secure=false
+      - --cookie-expire=5m
+      - --cookie-refresh=1m # 最好小於 oidc token 的 expire, 才能自動 renew token
+      - --cookie-secret=EkDfQdT1ee7Eoouv3oOsWqXiFS2ZwQ3Y
+      - --cookie-csrf-per-request=true
+      - --cookie-csrf-expire=5m
+      # 盡可能隱藏 oauth2-proxy 的存在感
+      - --silence-ping-logging
+      - --skip-provider-button
+      - --request-logging=false
+    environment:
+      - TZ=Asia/Taipei
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:4180/ping']
+      interval: 10s
+      timeout: 5s
+      retries: 3
