@@ -28,6 +28,6 @@
 2. 啟動 UI 與 AP
 3. 啟動 Protal
 4. 確認上面設定有沒有問題(尤其是SSO的Bind credentials跑掉的問題)
-5. 進入 http://host.docker.internal:4180
+5. 進入 http://host.docker.internal:4180 (登入帳密 user01/password1 user02/password2)
 6. 點擊 JCConf 2024
 7. 操作 Hello / Check Twjug / Check Admin / Sign Out
