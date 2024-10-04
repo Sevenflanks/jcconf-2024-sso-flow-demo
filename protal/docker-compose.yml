@@ -17,6 +17,7 @@ services:
       - --real-client-ip-header=X-Forwarded-For
       - --skip-auth-route=/favicon.* OR /oauth2/.*
       - --whitelist-domain=host.docker.internal:8081
+      - --api-route=/api/.* # 若打這pattern的url,且發生token驗證failed不要觸發redirect,回應401
       # oidc的串接設定
       - --client-id=demo
       - --client-secret=fMw2Vzp0WZl4fMeE4izQ0BNzb0QQKTJE

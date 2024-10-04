@@ -35,6 +35,11 @@
     </div>
     <div>
       <span>
+        <button @click="signin">re_signin</button>
+      </span>
+    </div>
+    <div>
+      <span>
         <button @click="signout">signout</button>
       </span>
     </div>
@@ -79,6 +84,10 @@ export default {
         expireAt: "",
       }
       this.roleResp = {}
+    },
+    async signin() {
+      // window.location.assign("http://host.docker.internal:8081/realms/jcconf/protocol/openid-connect/logout?post_logout_redirect_uri=http://host.docker.internal:4180/oauth2/sign_out");
+      window.location.assign("/oauth2/start");
     },
     async signout() {
       // window.location.assign("http://host.docker.internal:8081/realms/jcconf/protocol/openid-connect/logout?post_logout_redirect_uri=http://host.docker.internal:4180/oauth2/sign_out");
