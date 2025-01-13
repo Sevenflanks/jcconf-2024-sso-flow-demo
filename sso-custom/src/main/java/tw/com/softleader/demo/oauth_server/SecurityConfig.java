@@ -12,8 +12,9 @@ import org.springframework.http.MediaType;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.oidc.OidcScopes;
@@ -25,9 +26,9 @@ import org.springframework.security.oauth2.server.authorization.config.annotatio
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
-import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 
 import java.security.KeyPair;
@@ -49,8 +50,6 @@ public class SecurityConfig {
 
     http
         .securityMatcher(authorizationServerConfigurer.getEndpointsMatcher())
-        .csrf(AbstractHttpConfigurer::disable)
-        .sessionManagement((session) -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .with(authorizationServerConfigurer, (authorizationServer) ->
             authorizationServer
                 .oidc(Customizer.withDefaults())	// Enable OpenID Connect 1.0
@@ -63,7 +62,8 @@ public class SecurityConfig {
         // authorization endpoint
         .exceptionHandling((exceptions) -> exceptions
             .defaultAuthenticationEntryPointFor(
-                new LoginUrlAuthenticationEntryPoint("/auth"),
+                new LoginUrlAuthenticationEntryPoint("/login"),
+                //                new LoginUrlAuthenticationEntryPoint("/auth"),
                 new MediaTypeRequestMatcher(MediaType.TEXT_HTML)
             )
         );
@@ -76,14 +76,24 @@ public class SecurityConfig {
   public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http)
       throws Exception {
     http
-        .csrf(AbstractHttpConfigurer::disable)
-        .sessionManagement((session) -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        .addFilterBefore(digestAuthenticationFilter(), BasicAuthenticationFilter.class)
+        .formLogin(Customizer.withDefaults())
+        //        .addFilterBefore(digestAuthenticationFilter(), BasicAuthenticationFilter.class)
         .authorizeHttpRequests((authorize) -> authorize
             .anyRequest().authenticated()
         );
 
     return http.build();
+  }
+
+  @Bean
+  public UserDetailsService userDetailsService() {
+    UserDetails userDetails = User.withDefaultPasswordEncoder()
+        .username("user")
+        .password("password")
+        .roles("USER")
+        .build();
+
+    return new InMemoryUserDetailsManager(userDetails);
   }
 
   @Bean
@@ -96,7 +106,7 @@ public class SecurityConfig {
     RegisteredClient oidcClient = RegisteredClient.withId(UUID.randomUUID().toString())
         .clientId("demo")
         .clientSecret("secret")
-        .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_JWT)
+        .clientAuthenticationMethod(ClientAuthenticationMethod.NONE)
         .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
         .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
         .redirectUri("http://host.docker.internal:4180/oauth2/callback")
