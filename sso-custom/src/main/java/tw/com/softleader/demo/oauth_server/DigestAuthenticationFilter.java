@@ -6,49 +6,58 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
+import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Optional;
 
-public class DigestAuthenticationFilter extends OncePerRequestFilter {
+public class DigestAuthenticationFilter extends AbstractAuthenticationProcessingFilter {
 
   private static final Logger log = LoggerFactory.getLogger(DigestAuthenticationFilter.class);
-  private final String path;
 
-  public DigestAuthenticationFilter(String path) {
-    this.path = path;
+  public DigestAuthenticationFilter(RequestMatcher requiresAuthenticationRequestMatcher,
+    AuthenticationManager authenticationManager) {
+    super(requiresAuthenticationRequestMatcher, authenticationManager);
   }
 
   @Override
-  protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-    throws ServletException, IOException {
-    if (path.equals(request.getServletPath())) {
-      // 從查詢字串中提取 token
-      String token = request.getHeader("digest");
-      if (token == null || token.isEmpty()) {
-        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token is missing");
-        return;
-      }
-      // 自外部系統驗證 token
-      if (!isTokenValid(token)) {
-        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid token");
-        return;
-      }
-      // 若驗證成功 FIXME 目前固定塞user
-      var userToken = new UsernamePasswordAuthenticationToken("user", token, List.of(new SimpleGrantedAuthority("ROLE_USER")));
-      SecurityContextHolder.getContext().setAuthentication(userToken);
+  public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) {
+    String token = Optional.ofNullable(request.getHeader("Digest"))
+      .or(() -> Optional.ofNullable(request.getHeader("digest")))
+      .orElse(null);
+
+    if (token == null || token.isEmpty()) {
+      throw new RuntimeException("Token is missing");
     }
-    // 繼續處理請求
-    filterChain.doFilter(request, response);
+
+    // 將 token 傳遞給 AuthenticationProvider
+    return getAuthenticationManager().authenticate(
+      new UsernamePasswordAuthenticationToken(token, null)
+    );
   }
 
-  private boolean isTokenValid(String token) {
-    // FIXME 此處為模擬外部呼叫
-    return "valid-token".equals(token);
+  @Override
+  protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain,
+    Authentication authResult) throws IOException, ServletException {
+    SecurityContextHolder.getContext().setAuthentication(authResult);
+
+    var savedRequestAwareAuthenticationSuccessHandler = new SavedRequestAwareAuthenticationSuccessHandler();
+    savedRequestAwareAuthenticationSuccessHandler.onAuthenticationSuccess(request, response, authResult);
+
+    //    // 嘗試獲取保存的請求
+    //    var savedRequest = requestCache.getRequest(request, response);
+    //    if (savedRequest != null) {
+    //      // 重定向到原始請求的路徑
+    //      response.sendRedirect(savedRequest.getRedirectUrl());
+    //    } else {
+    //      chain.doFilter(request, response);
+    //    }
   }
 
 }

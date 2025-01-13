@@ -9,13 +9,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.oidc.OidcScopes;
@@ -29,16 +28,17 @@ import org.springframework.security.oauth2.server.authorization.settings.Authori
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.util.List;
 import java.util.UUID;
 
 @Configuration
@@ -60,30 +60,31 @@ public class SecurityConfig {
   @Bean
   @Order(1)
   public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http)
-      throws Exception {
+    throws Exception {
     OAuth2AuthorizationServerConfigurer authorizationServerConfigurer =
-        OAuth2AuthorizationServerConfigurer.authorizationServer();
+      OAuth2AuthorizationServerConfigurer.authorizationServer();
 
     http
-        .csrf(CsrfConfigurer::disable)
-        .securityMatcher(authorizationServerConfigurer.getEndpointsMatcher())
-        .with(authorizationServerConfigurer, (authorizationServer) ->
-            authorizationServer
-                .oidc(Customizer.withDefaults())    // Enable OpenID Connect 1.0
+      .csrf(CsrfConfigurer::disable)
+      .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+      .securityMatcher(authorizationServerConfigurer.getEndpointsMatcher())
+      .with(authorizationServerConfigurer, (authorizationServer) ->
+        authorizationServer
+          .oidc(Customizer.withDefaults())    // Enable OpenID Connect 1.0
+      )
+      .authorizeHttpRequests((authorize) ->
+        authorize
+          .anyRequest().authenticated()
+      )
+      // Redirect to the login page when not authenticated from the
+      // authorization endpoint
+      .exceptionHandling((exceptions) -> exceptions
+        .defaultAuthenticationEntryPointFor(
+          //                                new LoginUrlAuthenticationEntryPoint("/login"),
+          new LoginUrlAuthenticationEntryPoint("/auth"),
+          new MediaTypeRequestMatcher(MediaType.TEXT_HTML)
         )
-        .authorizeHttpRequests((authorize) ->
-            authorize
-                .anyRequest().authenticated()
-        )
-        // Redirect to the login page when not authenticated from the
-        // authorization endpoint
-        .exceptionHandling((exceptions) -> exceptions
-            .defaultAuthenticationEntryPointFor(
-                //                                new LoginUrlAuthenticationEntryPoint("/login"),
-                new LoginUrlAuthenticationEntryPoint("/auth"),
-                new MediaTypeRequestMatcher(MediaType.TEXT_HTML)
-            )
-        );
+      );
 
     return http.build();
   }
@@ -91,27 +92,15 @@ public class SecurityConfig {
   @Bean
   @Order(2)
   public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http)
-      throws Exception {
+    throws Exception {
     http
-        .csrf(CsrfConfigurer::disable)
-        //                .formLogin(Customizer.withDefaults())
-        .addFilterBefore(digestAuthenticationFilter(), BasicAuthenticationFilter.class)
-        .authorizeHttpRequests((authorize) -> authorize
-            .anyRequest().authenticated()
-        );
-
+      .csrf(CsrfConfigurer::disable)
+      .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+      .addFilterBefore(digestAuthenticationFilter(), BasicAuthenticationFilter.class)
+      .authorizeHttpRequests((authorize) -> authorize
+        .anyRequest().authenticated()
+      );
     return http.build();
-  }
-
-  @Bean
-  public UserDetailsService userDetailsService() {
-    UserDetails userDetails = User.withDefaultPasswordEncoder()
-        .username("user")
-        .password("password")
-        .roles("USER")
-        .build();
-
-    return new InMemoryUserDetailsManager(userDetails);
   }
 
   @Bean
@@ -125,33 +114,34 @@ public class SecurityConfig {
 
   @Bean
   public DigestAuthenticationFilter digestAuthenticationFilter() {
-    return new DigestAuthenticationFilter("/auth");
+    var authenticationManager = new ProviderManager(List.of(new DigestAuthenticationProvider()));
+    return new DigestAuthenticationFilter(new AntPathRequestMatcher("/auth"), authenticationManager);
   }
 
   @Bean
   public RegisteredClientRepository registeredClientRepository() {
     RegisteredClient oidcClient = RegisteredClient.withId(UUID.randomUUID().toString())
-        .clientId("demo")
-        .clientSecret("{noop}secret")
-        .clientAuthenticationMethods(method -> {
-          method.add(ClientAuthenticationMethod.CLIENT_SECRET_BASIC);
-          method.add(ClientAuthenticationMethod.CLIENT_SECRET_POST);
-          method.add(ClientAuthenticationMethod.NONE);
-          method.add(ClientAuthenticationMethod.CLIENT_SECRET_JWT);
-          method.add(ClientAuthenticationMethod.TLS_CLIENT_AUTH);
-          method.add(ClientAuthenticationMethod.PRIVATE_KEY_JWT);
-          method.add(ClientAuthenticationMethod.SELF_SIGNED_TLS_CLIENT_AUTH);
-        })
-        .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-        .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
-        .redirectUris(uri -> {
-          uri.add("http://host.docker.internal:4180/oauth2/callback");
-          uri.add("https://oauthdebugger.com/debug");
-        })
-        .scope(OidcScopes.OPENID)
-        .scope(OidcScopes.PROFILE)
-        .clientSettings(ClientSettings.builder().requireAuthorizationConsent(true).build())
-        .build();
+      .clientId("demo")
+      .clientSecret("{noop}secret")
+      .clientAuthenticationMethods(method -> {
+        method.add(ClientAuthenticationMethod.CLIENT_SECRET_BASIC);
+        method.add(ClientAuthenticationMethod.CLIENT_SECRET_POST);
+        method.add(ClientAuthenticationMethod.NONE);
+        method.add(ClientAuthenticationMethod.CLIENT_SECRET_JWT);
+        method.add(ClientAuthenticationMethod.TLS_CLIENT_AUTH);
+        method.add(ClientAuthenticationMethod.PRIVATE_KEY_JWT);
+        method.add(ClientAuthenticationMethod.SELF_SIGNED_TLS_CLIENT_AUTH);
+      })
+      .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+      .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
+      .redirectUris(uri -> {
+        uri.add("http://host.docker.internal:4180/oauth2/callback");
+        uri.add("https://oauthdebugger.com/debug");
+      })
+      .scope(OidcScopes.OPENID)
+      .scope(OidcScopes.PROFILE)
+      .clientSettings(ClientSettings.builder().requireAuthorizationConsent(true).build())
+      .build();
 
     return new InMemoryRegisteredClientRepository(oidcClient);
   }
@@ -162,9 +152,9 @@ public class SecurityConfig {
     RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
     RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
     RSAKey rsaKey = new RSAKey.Builder(publicKey)
-        .privateKey(privateKey)
-        .keyID(UUID.randomUUID().toString())
-        .build();
+      .privateKey(privateKey)
+      .keyID(UUID.randomUUID().toString())
+      .build();
     JWKSet jwkSet = new JWKSet(rsaKey);
     return new ImmutableJWKSet<>(jwkSet);
   }
