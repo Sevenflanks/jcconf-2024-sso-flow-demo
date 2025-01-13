@@ -1,7 +1,7 @@
 version: '3'
 services:
   oauth2-proxy:
-    image: bitnami/oauth2-proxy:7.6.0
+    image: bitnami/oauth2-proxy:7.7.1
     ports:
       - '4180:4180'
     command:
@@ -21,7 +21,7 @@ services:
       # oidc的串接設定
       - --client-id=demo
       - --client-secret=secret
-      - --scope=openid
+      - --scope=openid profile
       - --oidc-issuer-url=http://host.docker.internal:9000
       - --redirect-url=http://host.docker.internal:4180/oauth2/callback
       - --code-challenge-method=S256
@@ -37,6 +37,7 @@ services:
       - --silence-ping-logging
       - --skip-provider-button
       - --request-logging=false
+      - --insecure-oidc-allow-unverified-email
     environment:
       - TZ=Asia/Taipei
     healthcheck:
