@@ -11,7 +11,7 @@ services:
       BIND_PASSWORD: "admin"
     depends_on:
       - "openldap"
-      
+  
   # https://hub.docker.com/r/bitnami/openldap
   openldap:
     image: bitnami/openldap:2

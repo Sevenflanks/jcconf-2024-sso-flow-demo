@@ -1,6 +1,7 @@
 # JCConf 2024 如何不要那麼狼狽的串接各種甲方的SSO - Demo
 
 ## 架構
+
 - [/ui](ui): 前端專案，使用 Vue 撰寫
   - required: Nodejs 18+ & pnpm
   - setup: `pnpm install`
@@ -24,6 +25,7 @@
   > ，儲存後右上角Action選單選擇Sync All Users
 
 ## 使用說明
+
 1. 啟動 SSO
 2. 啟動 UI 與 AP
 3. 啟動 Protal

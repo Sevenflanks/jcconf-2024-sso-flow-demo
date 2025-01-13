@@ -6,8 +6,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,16 +17,15 @@ import java.util.List;
 public class DigestAuthenticationFilter extends OncePerRequestFilter {
 
   private static final Logger log = LoggerFactory.getLogger(DigestAuthenticationFilter.class);
+  private final String path;
 
   public DigestAuthenticationFilter(String path) {
     this.path = path;
   }
 
-  private final String path;
-
   @Override
   protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-      throws ServletException, IOException {
+    throws ServletException, IOException {
     if (path.equals(request.getServletPath())) {
       // 從查詢字串中提取 token
       String token = request.getHeader("digest");

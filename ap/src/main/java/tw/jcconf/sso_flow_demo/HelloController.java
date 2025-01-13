@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -23,11 +22,11 @@ public class HelloController {
   public AuthResp hello(Authentication authentication) {
     var jwt = Optional.ofNullable((Jwt) authentication.getCredentials());
     return new AuthResp(
-        authentication.getName(),
-        authentication.getAuthorities().stream()
-            .map(GrantedAuthority::getAuthority).collect(Collectors.toSet()),
-        jwt.map(AbstractOAuth2Token::getExpiresAt)
-            .map(i -> LocalDateTime.ofInstant(i, ZoneId.systemDefault())).orElse(null)
+      authentication.getName(),
+      authentication.getAuthorities().stream()
+        .map(GrantedAuthority::getAuthority).collect(Collectors.toSet()),
+      jwt.map(AbstractOAuth2Token::getExpiresAt)
+        .map(i -> LocalDateTime.ofInstant(i, ZoneId.systemDefault())).orElse(null)
     );
   }
 

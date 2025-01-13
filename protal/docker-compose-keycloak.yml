@@ -40,7 +40,7 @@ services:
     environment:
       - TZ=Asia/Taipei
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:4180/ping']
+      test: [ 'CMD', 'curl', '-f', 'http://localhost:4180/ping' ]
       interval: 10s
       timeout: 5s
       retries: 3

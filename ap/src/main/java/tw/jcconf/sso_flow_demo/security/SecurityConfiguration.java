@@ -20,8 +20,8 @@ public class SecurityConfiguration {
   @Bean
   public JwtDecoder jwtDecoder(OAuth2ResourceServerProperties oauth2ResourceServerProperties) {
     return NimbusJwtDecoder
-        .withIssuerLocation(oauth2ResourceServerProperties.getJwt().getIssuerUri())
-        .build();
+      .withIssuerLocation(oauth2ResourceServerProperties.getJwt().getIssuerUri())
+      .build();
   }
 
   @Bean
@@ -37,16 +37,16 @@ public class SecurityConfiguration {
 
   @Bean
   public SecurityFilterChain securityFilterChain(
-      HttpSecurity http) throws Exception {
+    HttpSecurity http) throws Exception {
     return http
-        .csrf(AbstractHttpConfigurer::disable)
-        .httpBasic(AbstractHttpConfigurer::disable)
-        .formLogin(AbstractHttpConfigurer::disable)
-        .logout(AbstractHttpConfigurer::disable)
-        .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
-        .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
-        .build();
+      .csrf(AbstractHttpConfigurer::disable)
+      .httpBasic(AbstractHttpConfigurer::disable)
+      .formLogin(AbstractHttpConfigurer::disable)
+      .logout(AbstractHttpConfigurer::disable)
+      .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+      .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
+      .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
+      .build();
   }
 
 }
