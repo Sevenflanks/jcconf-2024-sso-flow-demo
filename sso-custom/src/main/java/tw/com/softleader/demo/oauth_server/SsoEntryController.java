@@ -26,7 +26,6 @@ public class SsoEntryController {
     headers.add(HttpHeaders.SET_COOKIE, ResponseCookie.from("Digest", digest)
       .path("/").httpOnly(true).maxAge(30).build().toString());
     var url = UriComponentsBuilder.fromUriString("http://host.docker.internal:4180/").build().toUri();
-    //      .queryParam("Digest", digest).build().toUri();
     headers.setLocation(url);
     return new ResponseEntity<>(headers, HttpStatus.SEE_OTHER);
   }

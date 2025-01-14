@@ -1,6 +1,5 @@
 package tw.com.softleader.demo.oauth_server;
 
-import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -8,8 +7,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
 import org.springframework.security.web.util.matcher.RequestMatcher;
@@ -34,7 +33,7 @@ public class DigestAuthenticationFilter extends AbstractAuthenticationProcessing
       .orElse(null);
 
     if (token == null || token.isEmpty()) {
-      throw new RuntimeException("Token is missing");
+      throw new AuthenticationServiceException("Token is missing");
     }
 
     var authRequest = new PreAuthenticatedAuthenticationToken(token, token);
@@ -44,12 +43,6 @@ public class DigestAuthenticationFilter extends AbstractAuthenticationProcessing
 
   protected void setDetails(HttpServletRequest request, AbstractAuthenticationToken authRequest) {
     authRequest.setDetails(this.authenticationDetailsSource.buildDetails(request));
-  }
-
-  @Override
-  protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain,
-    Authentication authResult) {
-    SecurityContextHolder.getContext().setAuthentication(authResult);
   }
 
   private String getCookieValue(HttpServletRequest request, HttpServletResponse response, String name) {
