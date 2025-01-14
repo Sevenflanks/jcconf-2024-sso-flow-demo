@@ -37,7 +37,7 @@ public class DigestAuthenticationFilter extends AbstractAuthenticationProcessing
     }
 
     var authRequest = new PreAuthenticatedAuthenticationToken(token, token);
-    setDetails(request, authRequest);
+    this.setDetails(request, authRequest);
     return this.getAuthenticationManager().authenticate(authRequest);
   }
 

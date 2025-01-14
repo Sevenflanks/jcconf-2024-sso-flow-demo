@@ -96,7 +96,7 @@ public class SecurityConfig {
       // authorization endpoint
       .exceptionHandling((exceptions) -> exceptions
         .defaultAuthenticationEntryPointFor(
-          //          new LoginUrlAuthenticationEntryPoint("/login"),
+          // new LoginUrlAuthenticationEntryPoint("/login"),
           new LoginUrlAuthenticationEntryPoint("/auth"),
           new MediaTypeRequestMatcher(MediaType.TEXT_HTML)
         )
@@ -112,7 +112,7 @@ public class SecurityConfig {
     http
       .csrf(CsrfConfigurer::disable)
       .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
-      //      .formLogin(Customizer.withDefaults())
+      // .formLogin(Customizer.withDefaults())
       .addFilterBefore(digestAuthenticationFilter(), BasicAuthenticationFilter.class)
       .authorizeHttpRequests((authorize) -> authorize
         .anyRequest().authenticated()
@@ -120,7 +120,7 @@ public class SecurityConfig {
     return http.build();
   }
 
-  //  @Bean
+  // @Bean
   public UserDetailsService users() {
     UserDetails user = User.withDefaultPasswordEncoder()
       .username("user")
