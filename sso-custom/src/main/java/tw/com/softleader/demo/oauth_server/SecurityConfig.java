@@ -10,15 +10,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.ProviderManager;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.oidc.OidcScopes;
@@ -32,7 +28,6 @@ import org.springframework.security.oauth2.server.authorization.settings.Authori
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
@@ -85,7 +80,6 @@ public class SecurityConfig {
       // authorization endpoint
       .exceptionHandling((exceptions) -> exceptions
         .defaultAuthenticationEntryPointFor(
-//        new LoginUrlAuthenticationEntryPoint("/login"),
           new LoginUrlAuthenticationEntryPoint("/auth"),
           new MediaTypeRequestMatcher(MediaType.TEXT_HTML)
         )
@@ -102,21 +96,10 @@ public class SecurityConfig {
       .csrf(CsrfConfigurer::disable)
       .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
       .addFilterBefore(digestAuthenticationFilter(), BasicAuthenticationFilter.class)
-//            .formLogin(Customizer.withDefaults())
       .authorizeHttpRequests((authorize) -> authorize
         .anyRequest().authenticated()
       );
     return http.build();
-  }
-
-//  @Bean
-  public UserDetailsService users() {
-    UserDetails user = User.withDefaultPasswordEncoder()
-      .username("user")
-      .password("user")
-      .roles("user", "admin")
-      .build();
-    return new InMemoryUserDetailsManager(user);
   }
 
   @Bean
@@ -130,9 +113,7 @@ public class SecurityConfig {
 
   @Bean
   public DigestAuthenticationFilter digestAuthenticationFilter() {
-//    var authenticationManager = new ProviderManager(List.of(new DigestAuthenticationProvider()));
-    var provider = new DaoAuthenticationProvider();
-    provider.setUserDetailsService(users());
+    var provider = new DigestAuthenticationProvider();
     var authenticationManager = new ProviderManager(List.of(provider));
     return new DigestAuthenticationFilter(new AntPathRequestMatcher("/auth"), authenticationManager);
   }
