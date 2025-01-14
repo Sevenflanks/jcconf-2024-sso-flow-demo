@@ -53,17 +53,8 @@ public class DigestAuthenticationFilter extends AbstractAuthenticationProcessing
 
   @Override
   protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain,
-    Authentication authResult) throws IOException, ServletException {
+    Authentication authResult) {
     SecurityContextHolder.getContext().setAuthentication(authResult);
-
-    //    // 嘗試獲取保存的請求
-    //    var savedRequest = requestCache.getRequest(request, response);
-    //    if (savedRequest != null) {
-    //      // 重定向到原始請求的路徑
-    //      response.sendRedirect(savedRequest.getRedirectUrl());
-    //    } else {
-    //      chain.doFilter(request, response);
-    //    }
   }
 
 }
