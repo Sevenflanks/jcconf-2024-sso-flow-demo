@@ -59,6 +59,18 @@ public class SecurityConfig {
 
   @Bean
   @Order(1)
+  public SecurityFilterChain externalSsoEntryChain(HttpSecurity http)
+    throws Exception {
+    http
+      .csrf(CsrfConfigurer::disable)
+      .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+      .securityMatcher(AntPathRequestMatcher.antMatcher("/external-login"))
+      .authorizeHttpRequests((authorize) -> authorize.anyRequest().permitAll());
+    return http.build();
+  }
+
+  @Bean
+  @Order(2)
   public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http)
     throws Exception {
     OAuth2AuthorizationServerConfigurer authorizationServerConfigurer =
@@ -89,7 +101,7 @@ public class SecurityConfig {
   }
 
   @Bean
-  @Order(2)
+  @Order(3)
   public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http)
     throws Exception {
     http
@@ -140,7 +152,9 @@ public class SecurityConfig {
       })
       .scope(OidcScopes.OPENID)
       .scope(OidcScopes.PROFILE)
-      .clientSettings(ClientSettings.builder().requireAuthorizationConsent(false).build())
+      .clientSettings(ClientSettings.builder()
+        .requireProofKey(true)
+        .requireAuthorizationConsent(false).build())
       .build();
 
     return new InMemoryRegisteredClientRepository(oidcClient);

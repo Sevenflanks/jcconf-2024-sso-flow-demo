@@ -21,6 +21,11 @@ const router = createRouter({
       path: '/jcconf-demo',
       name: 'jcconf-demo',
       component: () => import('../views/JcconfDemoView.vue')
+    },
+    {
+      path: '/external-portal',
+      name: 'external-portal',
+      component: () => import('../views/ExternalPortalView.vue')
     }
   ]
 })

@@ -1,6 +1,7 @@
 package tw.com.softleader.demo.oauth_server;
 
 import jakarta.servlet.FilterChain;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
@@ -13,6 +14,7 @@ import org.springframework.security.web.authentication.AbstractAuthenticationPro
 import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
+import java.util.Arrays;
 import java.util.Optional;
 
 public class DigestAuthenticationFilter extends AbstractAuthenticationProcessingFilter {
@@ -26,8 +28,9 @@ public class DigestAuthenticationFilter extends AbstractAuthenticationProcessing
 
   @Override
   public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) {
-    String token = Optional.ofNullable(request.getHeader("Digest"))
-      .or(() -> Optional.ofNullable(request.getHeader("digest")))
+    var token = Optional.ofNullable(request.getHeader("Digest"))
+      .or(() -> Optional.ofNullable(request.getParameter("Digest")))
+      .or(() -> Optional.ofNullable(getCookieValue(request, response, "Digest")))
       .orElse(null);
 
     if (token == null || token.isEmpty()) {
@@ -47,6 +50,19 @@ public class DigestAuthenticationFilter extends AbstractAuthenticationProcessing
   protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain,
     Authentication authResult) {
     SecurityContextHolder.getContext().setAuthentication(authResult);
+  }
+
+  private String getCookieValue(HttpServletRequest request, HttpServletResponse response, String name) {
+    var cookieValue = Optional.ofNullable(request.getCookies())
+      .stream().flatMap(Arrays::stream)
+      .filter(cookie -> name.equals(cookie.getName()))
+      .findFirst()
+      .map(Cookie::getValue)
+      .orElse(null);
+    var emptyCookie = new Cookie("Digest", null);
+    emptyCookie.setMaxAge(0);
+    response.addCookie(emptyCookie);
+    return cookieValue;
   }
 
 }
