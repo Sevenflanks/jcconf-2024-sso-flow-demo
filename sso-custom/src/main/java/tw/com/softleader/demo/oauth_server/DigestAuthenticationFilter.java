@@ -11,11 +11,13 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
-import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import java.io.IOException;
 import java.util.Optional;
+
+import static java.util.Base64.getUrlDecoder;
+import static org.springframework.util.StringUtils.hasText;
 
 public class DigestAuthenticationFilter extends AbstractAuthenticationProcessingFilter {
 
@@ -36,19 +38,23 @@ public class DigestAuthenticationFilter extends AbstractAuthenticationProcessing
       throw new RuntimeException("Token is missing");
     }
 
-    // 將 token 傳遞給 AuthenticationProvider
-    return getAuthenticationManager().authenticate(
-      new UsernamePasswordAuthenticationToken(token, null)
-    );
+//    // 將 token 傳遞給 AuthenticationProvider
+//    return getAuthenticationManager().authenticate(
+//      new UsernamePasswordAuthenticationToken(token, null)
+//    );
+    var authRequest = UsernamePasswordAuthenticationToken.unauthenticated(token, token);
+    setDetails(request, authRequest);
+    return this.getAuthenticationManager().authenticate(authRequest);
+  }
+
+  protected void setDetails(HttpServletRequest request, UsernamePasswordAuthenticationToken authRequest) {
+    authRequest.setDetails(this.authenticationDetailsSource.buildDetails(request));
   }
 
   @Override
   protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain,
     Authentication authResult) throws IOException, ServletException {
     SecurityContextHolder.getContext().setAuthentication(authResult);
-
-    var savedRequestAwareAuthenticationSuccessHandler = new SavedRequestAwareAuthenticationSuccessHandler();
-    savedRequestAwareAuthenticationSuccessHandler.onAuthenticationSuccess(request, response, authResult);
 
     //    // 嘗試獲取保存的請求
     //    var savedRequest = requestCache.getRequest(request, response);
