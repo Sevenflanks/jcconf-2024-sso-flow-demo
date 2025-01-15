@@ -33,3 +33,29 @@
 5. 進入 http://host.docker.internal:4180 (登入帳密 user01/password1 user02/password2)
 6. 點擊 JCConf 2024
 7. 操作 Hello / Check Twjug / Check Admin / Sign Out
+
+# JCConf 2025(暫定) 如何有點狼狽的串接甲方自定義的SSO - Demo
+
+## 情境
+
+> 甲方有既存的SSO機制, 方式是先在甲方的SSO平台登入後, 透過甲方自己的Portal頁面進入到本系統  
+> 進入本系統時, 會帶著一個Token(放在header或body), 本系統會需要拿token去向SSO平台要回User資訊(一次性)
+
+## 實作方式
+
+[sso-custom\tw.com.softleader.demo.oauth_server.SecurityConfig](./sso-custom/src/main/java/tw/com/softleader/demo/oauth_server/SecurityConfig.java)
+
+1. 甲方SSO Token -> Chain1: 將 token 預先放到 session 備用, 並透過303將轉導為 GET -> 進入 Chain2
+
+> 由於 oauth2-proxy 在 POST 時不會把 oauth2 流程所需資訊放到 body(form-data)  
+> 但又 Spring Oauth2 在 POST 時只會從 body(form-data) 取資訊, 因此需要轉 GET
+
+2. 自 oauth2-proxy -> Chain2: 正規 oauth2 流程, 但初次進入時由於本 auth server 尚未有登入資訊, 因此驗證失敗
+
+> 已登入完成的情況下(有session), 於本步驟會驗證成功並 302 轉導至 oauth2-proxy callback url
+
+3. 若 Chain2 驗證失敗, 透過302轉導 -> Chain3: 甲方SSO Token解析流程, 目的是將 token 驗證並解析為 User 資訊後放入 security context, 且需要存入 session(重要)
+
+> 需要放入 session 的主因是 Chain2 驗證是否已登入的方式就是透過取得 session
+
+4. Chain3 驗證成功, 透過302轉導 -> Chain2: 驗證成功 302 轉導至 oauth2-proxy callback url -> 登入完畢
