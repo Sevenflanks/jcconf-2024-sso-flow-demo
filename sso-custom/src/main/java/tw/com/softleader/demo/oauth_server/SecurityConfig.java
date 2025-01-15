@@ -15,9 +15,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.oidc.OidcScopes;
@@ -31,7 +28,6 @@ import org.springframework.security.oauth2.server.authorization.settings.Authori
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.authentication.session.ChangeSessionIdAuthenticationStrategy;
@@ -99,7 +95,6 @@ public class SecurityConfig {
       // authorization endpoint
       .exceptionHandling((exceptions) -> exceptions
         .defaultAuthenticationEntryPointFor(
-          // new LoginUrlAuthenticationEntryPoint("/login"),
           new LoginUrlAuthenticationEntryPoint("/auth"),
           new MediaTypeRequestMatcher(MediaType.TEXT_HTML)
         )
@@ -115,22 +110,11 @@ public class SecurityConfig {
     http
       .csrf(CsrfConfigurer::disable)
       .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.ALWAYS))
-      // .formLogin(Customizer.withDefaults())
       .addFilterBefore(digestAuthenticationFilter(), BasicAuthenticationFilter.class)
       .authorizeHttpRequests((authorize) -> authorize
         .anyRequest().authenticated()
       );
     return http.build();
-  }
-
-  // @Bean
-  public UserDetailsService users() {
-    UserDetails user = User.withDefaultPasswordEncoder()
-      .username("user")
-      .password("user")
-      .roles("user", "admin")
-      .build();
-    return new InMemoryUserDetailsManager(user);
   }
 
   @Bean
@@ -146,8 +130,6 @@ public class SecurityConfig {
   public DigestAuthenticationFilter digestAuthenticationFilter() {
     var provider = new DigestAuthenticationProvider();
     var authenticationManager = new ProviderManager(List.of(provider));
-    var sessionAuthenticationStrategy = new CompositeSessionAuthenticationStrategy(
-      List.of(new ChangeSessionIdAuthenticationStrategy()));
     var securityContextRepository = new HttpSessionSecurityContextRepository();
     var digestAuthenticationFilter = new DigestAuthenticationFilter(
       new AntPathRequestMatcher("/auth"), authenticationManager);
