@@ -9,11 +9,13 @@ import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 public class DigestAuthenticationFilter extends AbstractAuthenticationProcessingFilter {
@@ -36,7 +38,8 @@ public class DigestAuthenticationFilter extends AbstractAuthenticationProcessing
       throw new AuthenticationServiceException("Token is missing");
     }
 
-    var authRequest = new PreAuthenticatedAuthenticationToken(token, token);
+    var authRequest = new PreAuthenticatedAuthenticationToken(token, token, List
+      .of(new SimpleGrantedAuthority("ROLE_twjug")));
     this.setDetails(request, authRequest);
     return this.getAuthenticationManager().authenticate(authRequest);
   }

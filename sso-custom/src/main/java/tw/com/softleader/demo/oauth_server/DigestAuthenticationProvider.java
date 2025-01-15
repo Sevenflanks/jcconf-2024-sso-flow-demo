@@ -2,23 +2,23 @@ package tw.com.softleader.demo.oauth_server;
 
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationProvider;
+import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
 
 public class DigestAuthenticationProvider extends PreAuthenticatedAuthenticationProvider {
 
   public DigestAuthenticationProvider() {
-    super.setPreAuthenticatedUserDetailsService(token ->
-      fetchUserFromExternalSystem((String) token.getCredentials()));
+    super.setPreAuthenticatedUserDetailsService(this::fetchUserFromExternalSystem);
   }
 
-  private UserDetails fetchUserFromExternalSystem(String token) {
+  private UserDetails fetchUserFromExternalSystem(PreAuthenticatedAuthenticationToken token) {
     // 模擬外部系統
     // FIXME 應調整為token取user的邏輯
-    if ("valid-token".equals(token)) {
+    if ("valid-token".equals(token.getCredentials())) {
       return org.springframework.security.core.userdetails.User
         .withDefaultPasswordEncoder()
         .username("user")
         .password("user")
-        .roles("user", "admin")
+        .authorities(token.getAuthorities())
         .build();
     }
     return null;

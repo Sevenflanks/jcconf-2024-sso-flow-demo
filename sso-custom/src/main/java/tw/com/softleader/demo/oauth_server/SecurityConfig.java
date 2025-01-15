@@ -34,7 +34,10 @@ import org.springframework.security.oauth2.server.authorization.token.OAuth2Toke
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.security.web.authentication.session.ChangeSessionIdAuthenticationStrategy;
+import org.springframework.security.web.authentication.session.CompositeSessionAuthenticationStrategy;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 
@@ -52,7 +55,7 @@ public class SecurityConfig {
   private static KeyPair generateRsaKey() {
     KeyPair keyPair;
     try {
-      KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+      var keyPairGenerator = KeyPairGenerator.getInstance("RSA");
       keyPairGenerator.initialize(2048);
       keyPair = keyPairGenerator.generateKeyPair();
     } catch (Exception ex) {
@@ -111,7 +114,7 @@ public class SecurityConfig {
     throws Exception {
     http
       .csrf(CsrfConfigurer::disable)
-      .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+      .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.ALWAYS))
       // .formLogin(Customizer.withDefaults())
       .addFilterBefore(digestAuthenticationFilter(), BasicAuthenticationFilter.class)
       .authorizeHttpRequests((authorize) -> authorize
@@ -143,7 +146,16 @@ public class SecurityConfig {
   public DigestAuthenticationFilter digestAuthenticationFilter() {
     var provider = new DigestAuthenticationProvider();
     var authenticationManager = new ProviderManager(List.of(provider));
-    return new DigestAuthenticationFilter(new AntPathRequestMatcher("/auth"), authenticationManager);
+    var sessionAuthenticationStrategy = new CompositeSessionAuthenticationStrategy(
+      List.of(new ChangeSessionIdAuthenticationStrategy()));
+    var securityContextRepository = new HttpSessionSecurityContextRepository();
+    var digestAuthenticationFilter = new DigestAuthenticationFilter(
+      new AntPathRequestMatcher("/auth"), authenticationManager);
+    // 雖然是使用token login, 但本 SSO Auth Server 需要保存登入狀態在 Session
+    digestAuthenticationFilter.setSessionAuthenticationStrategy(new CompositeSessionAuthenticationStrategy(
+      List.of(new ChangeSessionIdAuthenticationStrategy())));
+    digestAuthenticationFilter.setSecurityContextRepository(securityContextRepository);
+    return digestAuthenticationFilter;
   }
 
   @Bean
