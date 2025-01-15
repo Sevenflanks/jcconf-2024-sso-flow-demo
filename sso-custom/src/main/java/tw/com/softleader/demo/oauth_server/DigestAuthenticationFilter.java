@@ -31,7 +31,7 @@ public class DigestAuthenticationFilter extends AbstractAuthenticationProcessing
   public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) {
     var token = Optional.ofNullable(request.getHeader("Digest"))
       .or(() -> Optional.ofNullable(request.getParameter("Digest")))
-      .or(() -> Optional.ofNullable(getCookieValue(request, response, "Digest")))
+      .or(() -> Optional.ofNullable(request.getSession().getAttribute("Digest")).map(String.class::cast))
       .orElse(null);
 
     if (token == null || token.isEmpty()) {
@@ -39,7 +39,7 @@ public class DigestAuthenticationFilter extends AbstractAuthenticationProcessing
     }
 
     var authRequest = new PreAuthenticatedAuthenticationToken(token, token, List
-      .of(new SimpleGrantedAuthority("ROLE_twjug")));
+      .of(new SimpleGrantedAuthority("twjug")));
     this.setDetails(request, authRequest);
     return this.getAuthenticationManager().authenticate(authRequest);
   }
