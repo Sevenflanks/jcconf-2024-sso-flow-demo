@@ -31,7 +31,9 @@ public class DigestAuthenticationFilter extends AbstractAuthenticationProcessing
   public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) {
     var token = Optional.ofNullable(request.getHeader("Digest"))
       .or(() -> Optional.ofNullable(request.getParameter("Digest")))
-      .or(() -> Optional.ofNullable(request.getSession().getAttribute("Digest")).map(String.class::cast))
+      .or(() -> Optional.ofNullable(request.getSession(false))
+        .map(session -> session.getAttribute("Digest"))
+        .map(String.class::cast))
       .orElse(null);
 
     if (token == null || token.isEmpty()) {
@@ -47,18 +49,4 @@ public class DigestAuthenticationFilter extends AbstractAuthenticationProcessing
   protected void setDetails(HttpServletRequest request, AbstractAuthenticationToken authRequest) {
     authRequest.setDetails(this.authenticationDetailsSource.buildDetails(request));
   }
-
-  private String getCookieValue(HttpServletRequest request, HttpServletResponse response, String name) {
-    var cookieValue = Optional.ofNullable(request.getCookies())
-      .stream().flatMap(Arrays::stream)
-      .filter(cookie -> name.equals(cookie.getName()))
-      .findFirst()
-      .map(Cookie::getValue)
-      .orElse(null);
-    var emptyCookie = new Cookie("Digest", null);
-    emptyCookie.setMaxAge(0);
-    response.addCookie(emptyCookie);
-    return cookieValue;
-  }
-
 }
