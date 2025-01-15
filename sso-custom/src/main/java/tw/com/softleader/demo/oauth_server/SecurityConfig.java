@@ -60,6 +60,10 @@ public class SecurityConfig {
     return keyPair;
   }
 
+  /**
+   * 用來處理外部非標準流程SSO登入完畢後, 帶著自定義token進入本系統時的進入點.
+   * 目的是先針對token做前期處理, 並轉導至Oauth2標準流程
+   */
   @Bean
   @Order(1)
   public SecurityFilterChain externalSsoEntryChain(HttpSecurity http)
@@ -72,6 +76,9 @@ public class SecurityConfig {
     return http.build();
   }
 
+  /**
+   * Oauth2標準流程, 但若無法直接用此流程驗證, 則進行登入流程
+   */
   @Bean
   @Order(2)
   public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http)
@@ -103,6 +110,9 @@ public class SecurityConfig {
     return http.build();
   }
 
+  /**
+   * 客製化登入流程, 目的在於從外部非標準流程SSO提供的token進行登入.
+   */
   @Bean
   @Order(3)
   public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http)
@@ -121,6 +131,7 @@ public class SecurityConfig {
   public OAuth2TokenCustomizer<JwtEncodingContext> jwtTokenCustomizer() {
     return (context) -> {
       context.getClaims().claims((claims) -> {
+        // FIXME 由於oauth2-proxy會需要且強制驗證email, 此處先寫死 for demo
         claims.put("email", "hello@softleader.com.tw");
       });
     };

@@ -12,20 +12,24 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.util.Optional;
 
 /**
- * 模擬外部SSO登入點, 外部SSO登入完成後需要帶著Header來訪問內部的SSO Auth Server(本APP)
+ * 模擬外部非標準流程SSO的進入點, 外部SSO登入完成後需要帶著Header或Parameter來訪問內部的SSO Auth Server(本APP)
  */
 @Controller
 public class SsoEntryController {
 
   @PostMapping("/external-login")
   public ResponseEntity<Void> externalLogin(HttpServletRequest request, HttpSession session) {
-    var digest = Optional.ofNullable(request.getHeader("Digest"))
+    var digest = Optional.ofNullable(request.getHeader("Digest")).map((this::decodeHashedDigest))
       .or(() -> Optional.ofNullable(request.getParameter("digest")))
       .orElseThrow(() -> new IllegalArgumentException("Digest is missing"));
     session.setAttribute("Digest", digest);
     var headers = new HttpHeaders();
     headers.setLocation(UriComponentsBuilder.fromUriString("http://host.docker.internal:4180/").build().toUri());
     return new ResponseEntity<>(headers, HttpStatus.SEE_OTHER);
+  }
+
+  private Object decodeHashedDigest(String hashedDigest) {
+    return hashedDigest; // FIXME 目前不是很確定 digest 如何做 decode, 先寫死 for demo
   }
 
 }

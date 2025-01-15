@@ -1,6 +1,5 @@
 package tw.com.softleader.demo.oauth_server;
 
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
@@ -14,10 +13,13 @@ import org.springframework.security.web.authentication.AbstractAuthenticationPro
 import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * 處理 Digest 成為登入資訊的 Filter.
+ * 目的是取得 Digest 解析並設定為登入資訊且儲存到 session
+ */
 public class DigestAuthenticationFilter extends AbstractAuthenticationProcessingFilter {
 
   private static final Logger log = LoggerFactory.getLogger(DigestAuthenticationFilter.class);
@@ -29,17 +31,18 @@ public class DigestAuthenticationFilter extends AbstractAuthenticationProcessing
 
   @Override
   public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) {
-    var token = Optional.ofNullable(request.getHeader("Digest"))
+    var token = Optional.ofNullable(request.getSession(false))
+      .map(session -> session.getAttribute("Digest"))
+      .map(String.class::cast)
+      .or(() -> Optional.ofNullable(request.getHeader("Digest")))
       .or(() -> Optional.ofNullable(request.getParameter("Digest")))
-      .or(() -> Optional.ofNullable(request.getSession(false))
-        .map(session -> session.getAttribute("Digest"))
-        .map(String.class::cast))
       .orElse(null);
 
     if (token == null || token.isEmpty()) {
       throw new AuthenticationServiceException("Token is missing");
     }
 
+    // FIXME SimpleGrantedAuthority內容應從token解析而得, 目前事先寫死 for demo
     var authRequest = new PreAuthenticatedAuthenticationToken(token, token, List
       .of(new SimpleGrantedAuthority("twjug")));
     this.setDetails(request, authRequest);
